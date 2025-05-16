@@ -63,22 +63,28 @@ def train():
       progress_bar = tqdm(enumerate(loader), total=len(loader), desc=f"Epoch {epoch}")
 
       for batch_idx, (images, labels) in progress_bar:
-          images, labels = images.to(device), labels.to(device)
-          embeddings = model(images)
-          loss, pos_dist, neg_dist = triplet_loss(embeddings, labels)
+        
+        try:
+            images, labels = images.to(device), labels.to(device)
+            embeddings = model(images)
+            loss, pos_dist, neg_dist = triplet_loss(embeddings, labels)
 
-          optimizer.zero_grad()
-          loss.backward()
-          optimizer.step()
-          scheduler.step(epoch + batch_idx / len(loader))
-          total_loss += loss.item()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            scheduler.step(epoch + batch_idx / len(loader))
+            total_loss += loss.item()
 
-          # Update the tqdm bar description with live loss info
-          progress_bar.set_postfix({
-              'Loss': f"{loss.item():.4f}",
-              '+Dist': f"{pos_dist.item():.4f}",
-              '-Dist': f"{neg_dist.item():.4f}"
-          })
+            # Update the tqdm bar description with live loss info
+            progress_bar.set_postfix({
+                'Loss': f"{loss.item():.4f}",
+                '+Dist': f"{pos_dist.item():.4f}",
+                '-Dist': f"{neg_dist.item():.4f}"
+            })
+
+        except Exception as e:
+            print(f"\n Error at batch {batch_idx} in epoch {epoch}: {e}")
+            break
 
       avg_loss = total_loss / len(loader)
       print(f"\n[Epoch {epoch}] Avg Loss: {avg_loss:.4f}\n")
@@ -92,7 +98,7 @@ def train():
           print(f"✗ No improvement in loss for {wait} epoch(s)")
 
       if wait >= patience:
-          print(f"\n🚨 Early stopping triggered at epoch {epoch}. Best loss: {best_loss:.4f}")
+          print(f"\n Early stopping triggered at epoch {epoch}. Best loss: {best_loss:.4f}")
           break
 
 if __name__ == '__main__':
