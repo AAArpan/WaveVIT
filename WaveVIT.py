@@ -150,3 +150,4 @@ def generate_triplets_from_market1501(data_dir, num_triplets=1000, mode='train')
     return triplets
 
 
+
