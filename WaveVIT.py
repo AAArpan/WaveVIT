@@ -47,6 +47,7 @@ class WaveVIT(nn.Module):
         if x.ndim == 4 and x.shape[1] == 3:
             out = []
             for sample in x:
+                #print(sample.shape)
                 # Sample shape: (3, H, W)
                 scat_sample = self.scatter(sample)
                 out.append(scat_sample)
@@ -86,12 +87,8 @@ class SiameseReIDModel(nn.Module):
         super().__init__()
         self.encoder = feature_extractor
     
-    def forward(self, anchor, positive, negative):
-        anchor_feat = self.encoder(anchor)
-        positive_feat = self.encoder(positive)
-        negative_feat = self.encoder(negative)
-        
-        return anchor_feat, positive_feat, 
+    def forward(self, x):
+        return self.encoder(x)
 
 class TripletReIDDataset(Dataset):
     def __init__(self, triplet_paths, transform=None):
