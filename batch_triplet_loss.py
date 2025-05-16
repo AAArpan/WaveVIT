@@ -27,12 +27,10 @@ class BatchAllTripletLoss(nn.Module):
         anchor_positive_mask = self._get_anchor_positive_mask(labels)
         anchor_negative_mask = self._get_anchor_negative_mask(labels)
 
-        # Compute triplet loss
-        anchor_positive_dist = pairwise_dist.unsqueeze(2)  # (B, B, 1)
-        anchor_negative_dist = pairwise_dist.unsqueeze(1)  # (B, 1, B)
+        anchor_positive_dist = pairwise_dist.unsqueeze(2)
+        anchor_negative_dist = pairwise_dist.unsqueeze(1)
 
         triplet_loss = anchor_positive_dist - anchor_negative_dist + self.margin
-
         mask = anchor_positive_mask.unsqueeze(2) & anchor_negative_mask.unsqueeze(1)
         triplet_loss = triplet_loss * mask
 
@@ -41,9 +39,13 @@ class BatchAllTripletLoss(nn.Module):
         valid_triplets = triplet_loss > 1e-16
         num_positive_triplets = valid_triplets.sum().float()
 
-        triplet_loss = triplet_loss.sum() / (num_positive_triplets + 1e-16)
+        loss = triplet_loss.sum() / (num_positive_triplets + 1e-16)
 
-        return triplet_loss
+        # For logging: average positive and negative distances
+        pos_dist = (pairwise_dist * anchor_positive_mask).sum() / (anchor_positive_mask.sum() + 1e-16)
+        neg_dist = (pairwise_dist * anchor_negative_mask).sum() / (anchor_negative_mask.sum() + 1e-16)
+
+        return loss, pos_dist, neg_dist
 
     def _pairwise_distance(self, embeddings):
         """Efficient pairwise Euclidean distance computation"""
