@@ -48,13 +48,14 @@ def train():
     dataset = Market1501Dataset('/content/market1501/Market-1501-v15.09.15', transform=train_transforms)
 
     sampler = RandomIdentitySampler(dataset.labels, num_instances=4, batch_size=32)
-    loader = DataLoader(dataset, batch_size=32, sampler=sampler, num_workers=4)
+    loader = DataLoader(dataset, batch_size=8, sampler=sampler, num_workers=4)
 
     margin = 0.3
     best_loss = float('inf')
     patience = 3 
     wait = 0
-
+    triplet_loss = BatchAllTripletLoss(margin)
+    
     for epoch in range(1, 101): 
       model.train()
       total_loss = 0
@@ -64,7 +65,7 @@ def train():
       for batch_idx, (images, labels) in progress_bar:
           images, labels = images.to(device), labels.to(device)
           embeddings = model(images)
-          loss, pos_dist, neg_dist = BatchAllTripletLoss(embeddings, labels, margin)
+          loss, pos_dist, neg_dist = triplet_loss(embeddings, labels)
 
           optimizer.zero_grad()
           loss.backward()
