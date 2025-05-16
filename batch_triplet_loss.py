@@ -101,6 +101,7 @@ class Market1501Dataset(torch.utils.data.Dataset):
             image = self.transform(image)
         return image, label
 
+#Group data by identity (PID)
 class RandomIdentitySampler(Sampler):
     def __init__(self, labels, num_instances=4, batch_size=32):
         self.labels = labels
