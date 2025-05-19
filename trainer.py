@@ -11,10 +11,8 @@ import argparse
 import os
 
 def get_layerwise_lr_decay_params(model, base_lr=3e-5, decay=0.9):
-    """Applies LLRD: assigns lower learning rates to lower layers of ViT"""
     layers = list(model.vit.blocks) + [model.vit.norm]
     param_groups = []
-
     for i, layer in enumerate(layers):
         lr = base_lr * (decay ** (len(layers) - i - 1))
         params = list(layer.parameters())
@@ -24,9 +22,7 @@ def get_layerwise_lr_decay_params(model, base_lr=3e-5, decay=0.9):
     for name, param in model.named_parameters():
         if not name.startswith('vit'):
             head_params.append(param)
-
     param_groups.append({'params': head_params, 'lr': base_lr * 10}) 
-
     return param_groups
 
 def train(args):
@@ -42,6 +38,11 @@ def train(args):
     ])
 
     model = SiameseReIDModel(WaveVIT()).to(device)
+
+    if args.finetune:
+        assert args.checkpoint_path is not None, "Please provide --checkpoint_path for finetuning."
+        model.load_state_dict(torch.load(args.checkpoint_path, map_location=device))
+        print(f"✓ Loaded checkpoint from: {args.checkpoint_path}")
 
     param_groups = get_layerwise_lr_decay_params(model.encoder, base_lr=3e-5, decay=0.9)
     optimizer = torch.optim.Adam(param_groups)
@@ -94,7 +95,6 @@ def train(args):
         torch.save(model.state_dict(), save_path)
         print(f"✓ Model saved at {save_path}")
 
-        # Early stopping logic
         if avg_loss < best_loss - 1e-4:
             best_loss = avg_loss
             wait = 0
@@ -112,6 +112,8 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=50, help='Number of training epochs')
     parser.add_argument('--dataset_dir', type=str, required=True, help='Path to Market1501 dataset')
     parser.add_argument('--model_save_dir', type=str, default='./saved_models', help='Directory to save models')
+    parser.add_argument('--finetune', action='store_true', help='Resume training from checkpoint')
+    parser.add_argument('--checkpoint_path', type=str, help='Path to .pt model checkpoint')
 
     args = parser.parse_args()
     train(args)
